@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# gh wrapper from git-profile: runs the real gh as the GitHub account of the git profile in effect
+# in the current dir (the profile's `gh` key), by passing that account's token in GH_TOKEN.
+# Falls through to plain gh when: GH_TOKEN/GITHUB_TOKEN is already set, the profile names no gh
+# account, the account is not logged in, or the command is `gh auth ...`.
+# Must come before the real gh on PATH (setup.sh puts this dir first).
+
+set -uo pipefail
+
+self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+
+real_gh="${GIT_PROFILE_REAL_GH:-}"
+if [[ -z "$real_gh" ]]; then
+    IFS=: read -r -a path_dirs <<< "$PATH"
+    for d in "${path_dirs[@]}"; do
+        [[ -x "$d/gh" && "$(cd "$d" 2>/dev/null && pwd -P)" != "$self_dir" ]] || continue
+        real_gh="$d/gh"
+        break
+    done
+fi
+[[ -n "$real_gh" ]] || { echo "gh (git-profile wrapper): no real gh found on PATH" >&2; exit 127; }
+
+if [[ -z "${GH_TOKEN:-}${GITHUB_TOKEN:-}" && "${1:-}" != "auth" ]] && command -v git-profile >/dev/null 2>&1; then
+    user=$(git-profile gh-user 2>/dev/null || true)
+    if [[ -n "$user" ]]; then
+        if token=$("$real_gh" auth token --hostname github.com --user "$user" 2>/dev/null) && [[ -n "$token" ]]; then
+            GH_TOKEN="$token" exec "$real_gh" "$@"
+        fi
+        echo "gh (git-profile): account '$user' is not logged in (gh auth login); using gh's active account" >&2
+    fi
+fi
+exec "$real_gh" "$@"

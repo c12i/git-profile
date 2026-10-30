@@ -1,0 +1,24 @@
+# git-profile config (git config format). Lives at ~/.config/git-profile/profiles.gitconfig.
+# Edit by hand or via `git-profile add/assign/use`; after a hand edit, run `git-profile apply`.
+
+[git-profile]
+	# profile used outside any pinned dir
+	active = default
+
+[profile "default"]
+	name = your-handle
+	email = you@example.com
+
+[profile "work"]
+	name = your-work-handle
+	email = you@work.example
+	# optional, overrides the global user.signingkey
+	# signingkey = ~/.ssh/work.pub
+	# optional GitHub CLI account (as shown by `gh auth status`)
+	# gh = your-work-handle
+	# optional SSH private key; git over ssh offers only this key
+	# sshkey = ~/.ssh/work
+	# pinned dirs (recursive); repeat the key for more
+	dir = ~/projects/work
+	# optional extra git keys for this profile: "<key> <value>", repeatable
+	# gitconfig = pull.rebase true
